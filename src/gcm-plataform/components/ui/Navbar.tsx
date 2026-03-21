@@ -46,7 +46,7 @@ const Navbar: React.FC<NavbarProps> = ({ showBack = false, onBack }) => {
       <div className="flex items-center gap-3">
         <Logo width={32} height={32} className="!justify-start" />
         <span className="text-white font-bold text-lg hidden md:block uppercase tracking-wider">
-          Portal corporativo
+          Process Platform
         </span>
       </div>
 

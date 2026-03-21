@@ -8,7 +8,7 @@ import { useAuthStore } from "@/gcm-plataform/components/store/authStore";
 import { Sistema } from "../../Auth/api/types/auth.types";
 
 const mockSistemas: Sistema[] = [
-  { id: 1, nombre: "Procesos", descripcion: "Gestión de flujos", icono: "Layout" },
+  { id: 1, nombre: "Process", descripcion: "Gestión de flujos", icono: "Layout", url: "http://10.0.0.231:8080/" },
   { id: 2, nombre: "Inventario", descripcion: "Stock y activos", icono: "Layers" },
   { id: 3, nombre: "Planillas", descripcion: "RRHH · nómina", icono: "Users" },
   { id: 4, nombre: "Enfermería", descripcion: "Salud · registros", icono: "Activity" },
@@ -46,7 +46,9 @@ const DashboardSection: React.FC = () => {
               icono={sistema.icono}
               esProximamente={sistema.esProximamente}
               onClick={() => {
-                if (!sistema.esProximamente) {
+                if (sistema.url) {
+                  window.location.assign(sistema.url);
+                } else if (!sistema.esProximamente) {
                   console.log(`Redirecting to ${sistema.nombre}...`);
                 }
               }}
