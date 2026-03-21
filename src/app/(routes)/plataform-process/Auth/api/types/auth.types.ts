@@ -113,3 +113,15 @@ export interface VerifiyAccesResponse {
 export interface Data {
     usuario: Usuario;
 }
+export interface Sistema {
+    id: string | number;
+    nombre: string;
+    descripcion: string;
+    icono?: string;
+    url?: string;
+    esProximamente?: boolean;
+}
+
+export interface DataPermissions {
+    sistemas: Sistema[];
+}
