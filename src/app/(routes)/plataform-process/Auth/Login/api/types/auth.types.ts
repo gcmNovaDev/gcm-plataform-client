@@ -1,5 +1,5 @@
 export interface LoginRequest {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -30,11 +30,11 @@ export interface Usuario {
   fechaUltimaConexion?: string;
 }
 
-export interface  Tokens {
+export interface Tokens {
   access_token: string;
   refresh_token?: string;
-  token_type?: string;   
-  expires_in?: number;   
+  token_type?: string;
+  expires_in?: number;
   expires_at?: string;
 }
 
@@ -44,6 +44,27 @@ export interface Sesion {
   tokenAccesoId?: string;
   fechaInicio?: string;
 }
+
+export interface LoginResponseData {
+  user_id: number;
+  username: string;
+  first_name: string;
+  second_name: string;
+  first_last_name: string;
+  second_last_name: string;
+  email: string;
+  plant_id: number;
+  department_id: number;
+  must_change_password: boolean;
+  session_id: number;
+  refresh_token: string;
+  result_code: number;
+  result_message: string;
+  tokens?: string;
+  token?: string;
+}
+
+export type LoginResponse = GenericBackendResponse<LoginResponseData>;
 
 export interface BackendLoginPayload {
   success: boolean;
@@ -71,25 +92,25 @@ export interface GenericBackendResponse<T = any> {
   data?: T;
 }
 export interface PayloadResetPass {
-    correo_electronico: string;
-    nuevo_password: string
+  correo_electronico: string;
+  nuevo_password: string;
 }
 
 export type TwoFactorVerifyCodeRequest = {
   email: string;
-  codigo: string;  
+  codigo: string;
 };
 
 export interface LogoutRequest {
   cerrarTodasLasSesiones: boolean;
-  motivoLogout: "LOGOUT"; 
+  motivoLogout: "LOGOUT";
 }
 
 export interface LogoutData {
   usuarioId?: string;
   tokensRevocados?: string;
   sesionesCerradas?: string;
-  fechaLogout?: string; 
+  fechaLogout?: string;
   cerrarTodasLasSesiones?: boolean;
   motivoLogout?: string;
 }
@@ -105,23 +126,23 @@ export interface persistUser {
 }
 
 export interface VerifiyAccesResponse {
-    success: boolean;
-    message: string;
-    data:    Data;
+  success: boolean;
+  message: string;
+  data: Data;
 }
 
 export interface Data {
-    usuario: Usuario;
+  usuario: Usuario;
 }
 export interface Sistema {
-    id: string | number;
-    nombre: string;
-    descripcion: string;
-    icono?: string;
-    url?: string;
-    esProximamente?: boolean;
+  id: string | number;
+  nombre: string;
+  descripcion: string;
+  icono?: string;
+  url?: string;
+  esProximamente?: boolean;
 }
 
 export interface DataPermissions {
-    sistemas: Sistema[];
+  sistemas: Sistema[];
 }

@@ -4,11 +4,12 @@ import React from "react";
 import Navbar from "@/gcm-plataform/components/ui/Navbar";
 import SystemCard from "./SystemCard";
 import InfoBar from "./InfoBar";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/gcm-plataform/components/store/authStore";
-import { Sistema } from "../../Auth/api/types/auth.types";
+import { Sistema } from "../../Auth/Login/api/types/auth.types";
 
 const mockSistemas: Sistema[] = [
-  { id: 1, nombre: "Process", descripcion: "Gestión de flujos", icono: "Layout", url: "http://10.0.0.231:8080/" },
+  { id: 1, nombre: "Process", descripcion: "Gestión de flujos", icono: "Layout", url: "/plataform-process/process-legacy" },
   { id: 2, nombre: "Inventario", descripcion: "Stock y activos", icono: "Layers" },
   { id: 3, nombre: "Planillas", descripcion: "RRHH · nómina", icono: "Users" },
   { id: 4, nombre: "Enfermería", descripcion: "Salud · registros", icono: "Activity" },
@@ -17,6 +18,7 @@ const mockSistemas: Sistema[] = [
 ];
 
 const DashboardSection: React.FC = () => {
+  const router = useRouter();
   const auth = useAuthStore((state) => state.auth);
   const usuario = auth?.data?.usuario;
   const firstName = usuario?.nombreCompleto?.split(" ")[0] || "Usuario";
@@ -47,7 +49,7 @@ const DashboardSection: React.FC = () => {
               esProximamente={sistema.esProximamente}
               onClick={() => {
                 if (sistema.url) {
-                  window.location.assign(sistema.url);
+                  router.push(sistema.url);
                 } else if (!sistema.esProximamente) {
                   console.log(`Redirecting to ${sistema.nombre}...`);
                 }

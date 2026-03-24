@@ -26,8 +26,7 @@ class HttpClient {
       },
     });
 
-    
-     this.axiosInstance.interceptors.request.use(
+    this.axiosInstance.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
         // Espera la hidratación (sessionStorage) para no perder el token en refresh
         await useAuthStore.getState().whenHydrated();
@@ -49,13 +48,17 @@ class HttpClient {
         config.headers = headers;
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     // RESPONSE
     this.axiosInstance.interceptors.response.use(
       (response: AxiosResponse) => response.data,
       async (error) => {
+        if (error.message === "Network Error") {
+          error.message = "Error de conexión al servidor. Por favor, comunícate con un administrador, de momento no contamos con el servicio.";
+        }
+
         const original = error.config as RetriableConfig | undefined;
         if (!error.response || !original || original.__isRetry) {
           return Promise.reject(error);
@@ -73,7 +76,10 @@ class HttpClient {
             original.headers = new AxiosHeaders(original.headers as any);
             original.headers.set("Authorization", `Bearer ${newToken}`);
             if (!original.headers.get("X-Auth-Type")) {
-              original.headers.set("X-Auth-Type", AuthType.SecurityAuthentication);
+              original.headers.set(
+                "X-Auth-Type",
+                AuthType.SecurityAuthentication,
+              );
             }
             return this.axiosInstance(original);
           } catch {
@@ -81,8 +87,14 @@ class HttpClient {
           }
         }
 
+        // Otros errores -> extraer mensaje del backend si existe
+        const backendMessage = error.response?.data?.message || error.response?.data?.error;
+        if (backendMessage) {
+          error.message = backendMessage;
+        }
+
         return Promise.reject(error);
-      }
+      },
     );
   }
 
