@@ -26,7 +26,9 @@ const LoginSection = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Eliminamos cualquier espacio en blanco (inicio, medio o fin) usando regex
+    const cleanValue = value.replace(/\s/g, "");
+    setFormData((prev) => ({ ...prev, [name]: cleanValue }));
     if (error) setError(null);
   };
 
