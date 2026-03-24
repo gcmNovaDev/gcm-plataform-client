@@ -6,11 +6,19 @@ import Logo from "@/gcm-plataform/components/ui/Logo";
 import ButtonGeneric from "@/gcm-plataform/components/ui/ButtonGeneric";
 import InputGeneric from "@/gcm-plataform/components/ui/InputGeneric";
 import { useAuthStore } from "@/gcm-plataform/components/store/authStore";
-import { persistUser } from "../api/types/auth.types";
+import { AuthService } from "../api/services/auth.services";
 
 const LoginSection = () => {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
+  
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/plataform-process/dashboard");
+    }
+  }, [isAuthenticated, router]);
   
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
@@ -27,52 +35,33 @@ const LoginSection = () => {
     setIsLoading(true);
     setError(null);
 
-    // Simular delay de API
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const { mappedAuth, mustChangePassword } = await AuthService.login({
+        identifier: formData.username,
+        password: formData.password,
+      });
 
-    // Credenciales de prueba
-    const TEST_USER = "admin@gcm.com";
-    const TEST_PASS = "admin123";
-
-    if (formData.username === TEST_USER && formData.password === TEST_PASS) {
-      // Mock de respuesta exitosa basada en persistUser
-      const mockAuthData: persistUser = {
-        success: true,
-        message: "¡Bienvenido de nuevo!",
-        data: {
-          usuario: {
-            id: "mock-id-123",
-            email: TEST_USER,
-            nombreCompleto: "Administrador GCM",
-            tipoUsuario: { id: "1", codigo: "ADMIN", nombre: "Administrador" },
-            roles: [{ id: 1, codigo: "ROLE_ADMIN", nombre: "Administrador del Sistema" }],
-            estaActivo: "1",
-            emailVerificado: true,
-            requiereDobleFactorAuth: "0",
-          },
-          tokens: {
-            access_token: "mock-jwt-token-access",
-            refresh_token: "mock-jwt-token-refresh",
-          },
-          sesion: {
-            id: "mock-session-id",
-            sessionIdString: "session-unique-string-123",
-            fechaInicio: new Date().toISOString(),
-          },
-        },
-      };
-
-      setAuth(mockAuthData);
-      router.push("/plataform-process/dashboard");
-    } else {
-      setIsLoading(false);
-      if (formData.username !== TEST_USER) {
-        setError("El usuario no existe");
-      } else {
-        setError("Contraseña errónea");
+      setAuth(mappedAuth);
+      router.replace("/plataform-process/dashboard");
+      
+    } catch (err: any) {
+      // Priorizamos el mensaje del backend si viene en el error de Axios
+      let errorMessage = err.response?.data?.message || err.message || "Error al iniciar sesión";
+      
+      if (errorMessage === "Network Error" || err.message?.includes("Network Error")) {
+        errorMessage = "Error de conexión al servidor. Por favor, comunícate con un administrador, de momento no contamos con el servicio.";
       }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // Evita el "parpadeo" del login si ya está autenticado o hidratando el estado
+  if (!hasHydrated || isAuthenticated) {
+    return <div className="min-h-screen bg-primary-50 flex items-center justify-center"></div>;
+  }
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-primary-50 px-4">
@@ -97,7 +86,7 @@ const LoginSection = () => {
             value={formData.username}
             onChange={handleInputChange}
             required
-            error={error && formData.username !== "admin@gcm.com" ? error : undefined}
+            error={error ? "" : undefined}
           />
           <InputGeneric
             label="Contraseña"
@@ -107,11 +96,11 @@ const LoginSection = () => {
             value={formData.password}
             onChange={handleInputChange}
             required
-            error={error && formData.username === "admin@gcm.com" ? error : undefined}
+            error={error ? "" : undefined}
           />
           
-          {error && formData.username === "admin@gcm.com" && formData.password === "admin123" && (
-             <p className="text-xs text-alert-error-text text-center">{error}</p>
+          {error && (
+             <p className="text-xs text-red-500 text-center font-medium bg-red-50 p-2 rounded border border-red-100 italic">{error}</p>
           )}
 
           <ButtonGeneric 

@@ -2,7 +2,11 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { persistUser, Tokens, BackendLoginPayload } from "../../../app/(routes)/plataform-process/Auth/api/types/auth.types";
+import type {
+  persistUser,
+  Tokens,
+  BackendLoginPayload,
+} from "../../../app/(routes)/plataform-process/Auth/Login/api/types/auth.types";
 
 type AuthState = {
   auth: persistUser | null;
@@ -111,8 +115,26 @@ export const useAuthStore = create<AuthState>()(
         set({ auth: merged, isAuthenticated: Boolean(tokens?.access_token) });
       },
 
-      logout: () => {
-        set({ auth: null, isAuthenticated: false });
+      logout: async () => {
+        const refresh_token = get().auth?.data?.tokens?.refresh_token;
+        try {
+          if (refresh_token) {
+            await fetch(`${API_BASE}/auth/logout/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({ token: refresh_token }),
+              cache: "no-store",
+            });
+          }
+        } catch (error) {
+          console.error("Error during server-side logout:", error);
+        } finally {
+          // Siempre limpiamos el estado local, falle o no la petición
+          set({ auth: null, isAuthenticated: false });
+        }
       },
 
       /**
@@ -146,13 +168,13 @@ export const useAuthStore = create<AuthState>()(
           const dispositivoInfo = getDeviceInfo();
 
           try {
-            const resp = await fetch(`${API_BASE}/auth/refresh-token`, {
+            const resp = await fetch(`${API_BASE}/auth/refresh/`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
               },
-              body: JSON.stringify({ refresh_token, dispositivoInfo }),
+              body: JSON.stringify({ token: refresh_token }),
               cache: "no-store",
             });
 
@@ -178,28 +200,31 @@ export const useAuthStore = create<AuthState>()(
               return get().auth?.data?.tokens?.access_token ?? null;
             }
 
-            const data = (await resp.json()) as BackendLoginPayload;
-            if (!data?.success || !data?.data?.tokens?.access_token) {
-              // respuesta extraña ⇒ conservar access actual
-              return get().auth?.data?.tokens?.access_token ?? null;
+            const refreshData = (await resp.json()) as any;
+            const newAccessToken = refreshData?.data?.access_token;
+
+            if (newAccessToken) {
+              const currentAuth = get().auth;
+              if (currentAuth) {
+                const updatedAuth = {
+                  ...currentAuth,
+                  data: {
+                    ...currentAuth.data,
+                    tokens: {
+                      ...currentAuth.data.tokens,
+                      access_token: newAccessToken,
+                    },
+                  },
+                };
+                set({ auth: updatedAuth, isAuthenticated: true });
+              }
+              return newAccessToken;
             }
 
-            const { usuario, tokens, sesion } = data.data;
-
-            if (usuario && sesion) {
-              get().setAuth({
-                success: true,
-                message: data.message || "Token refrescado exitosamente",
-                data: { usuario, tokens: tokens!, sesion },
-              });
-            } else {
-              get().setTokens(tokens!);
-            }
-
-            return get().auth?.data?.tokens?.access_token ?? null;
-          } catch {
-            // error de red ⇒ no tumbar sesión
-            return get().auth?.data?.tokens?.access_token ?? null;
+            return null;
+          } catch (error) {
+            console.error("Error refreshing token:", error);
+            return null;
           } finally {
             refreshPromise = null;
           }
@@ -255,7 +280,10 @@ export const useAuthStore = create<AuthState>()(
               const hasRefresh =
                 !!useAuthStore.getState().auth?.data?.tokens?.refresh_token;
               if (hasRefresh) {
-                useAuthStore.getState().refreshTokens().catch(() => {});
+                useAuthStore
+                  .getState()
+                  .refreshTokens()
+                  .catch(() => {});
               }
             }
           } catch {
@@ -263,6 +291,6 @@ export const useAuthStore = create<AuthState>()(
           }
         }, 0);
       },
-    }
-  )
+    },
+  ),
 );
