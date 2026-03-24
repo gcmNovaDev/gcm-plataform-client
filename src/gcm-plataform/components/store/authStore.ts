@@ -119,7 +119,7 @@ export const useAuthStore = create<AuthState>()(
         const refresh_token = get().auth?.data?.tokens?.refresh_token;
         try {
           if (refresh_token) {
-            await fetch(`${API_BASE}/auth/logout/`, {
+            await fetch(`${API_BASE}auth/logout/`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthState>()(
           const dispositivoInfo = getDeviceInfo();
 
           try {
-            const resp = await fetch(`${API_BASE}/auth/refresh/`, {
+            const resp = await fetch(`${API_BASE}auth/refresh/`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -259,13 +259,14 @@ export const useAuthStore = create<AuthState>()(
 
             if (access) {
               try {
-                const res = await fetch(`${API_BASE}/auth/verify-token`, {
+                const res = await fetch(`${API_BASE}auth/verify-token`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
                     Authorization: `Bearer ${access}`,
                   },
+                  body: JSON.stringify({ token: access }),
                   cache: "no-store",
                 }).then((r) => r.json());
 
