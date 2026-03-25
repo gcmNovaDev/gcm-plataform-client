@@ -248,7 +248,11 @@ export const useAuthStore = create<AuthState>()(
 
             if (access) {
               try {
+<<<<<<< HEAD
                 const resp = await fetch(`${API_BASE}auth/verify-token/`, {
+=======
+                const res = await fetch(`${API_BASE}auth/verify-token`, {
+>>>>>>> QA
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
