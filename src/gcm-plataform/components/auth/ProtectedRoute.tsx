@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "./AuthContext";
+import { useAuthStore } from "@/gcm-plataform/components/store/authStore";
 import Logo from "@/gcm-plataform/components/ui/Logo";
 
 interface ProtectedRouteProps {
@@ -11,10 +11,14 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const router = useRouter();
-  const { isAuthenticated, hasHydrated } = useAuth();
+  
+  // Leemos directamente del store para evitar el desfase de sincronización del AuthContext
+  const auth = useAuthStore((state) => state.auth);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
 
   useEffect(() => {
-    console.log("[ProtectedRoute] State changed:", { hasHydrated, isAuthenticated });
+    console.log("[ProtectedRoute] State changed:", { hasHydrated, isAuthenticated , auth});
     if (hasHydrated && !isAuthenticated) {
       console.warn("[ProtectedRoute] Not authenticated, redirecting to Login...");
       router.push("/plataform-process/Auth/Login");

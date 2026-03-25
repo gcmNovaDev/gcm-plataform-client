@@ -56,7 +56,8 @@ class HttpClient {
       (response: AxiosResponse) => response.data,
       async (error) => {
         if (error.message === "Network Error") {
-          error.message = "Error de conexión al servidor. Por favor, comunícate con un administrador, de momento no contamos con el servicio.";
+          error.message =
+            "Error de conexión al servidor. Por favor, comunícate con un administrador, de momento no contamos con el servicio.";
         }
 
         const original = error.config as RetriableConfig | undefined;
@@ -88,7 +89,8 @@ class HttpClient {
         }
 
         // Otros errores -> extraer mensaje del backend si existe
-        const backendMessage = error.response?.data?.message || error.response?.data?.error;
+        const backendMessage =
+          error.response?.data?.message || error.response?.data?.error;
         if (backendMessage) {
           error.message = backendMessage;
         }

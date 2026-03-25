@@ -49,6 +49,7 @@ const DashboardSection: React.FC = () => {
               esProximamente={sistema.esProximamente}
               onClick={() => {
                 if (sistema.url) {
+                  // Ya no adjuntamos el token en la URL para ocultarlo de los logs del servidor
                   router.push(sistema.url);
                 } else if (!sistema.esProximamente) {
                   console.log(`Redirecting to ${sistema.nombre}...`);
