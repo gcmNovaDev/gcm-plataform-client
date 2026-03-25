@@ -181,22 +181,11 @@ export const useAuthStore = create<AuthState>()(
             // refresh inválido/expirado ⇒ cerrar sesión
             if (!resp.ok) {
               if (resp.status === 400 || resp.status === 401) {
-                let body: any = null;
-                try {
-                  body = await resp.json();
-                } catch {}
-                const reason = (body?.message || "").toLowerCase();
-                const invalid =
-                  reason.includes("invalid") ||
-                  reason.includes("inválido") ||
-                  reason.includes("expire") ||
-                  reason.includes("expir");
-                if (invalid) {
-                  set({ auth: null, isAuthenticated: false });
-                  return null;
-                }
+                // 401 Siempre es fatal. 400 en refresh suele ser fatal también (token inválido/malformado).
+                set({ auth: null, isAuthenticated: false });
+                return null;
               }
-              // red/5xx ⇒ conservar token actual
+              // red/5xx ⇒ conservar token actual (error transitorio)
               return get().auth?.data?.tokens?.access_token ?? null;
             }
 
@@ -259,7 +248,11 @@ export const useAuthStore = create<AuthState>()(
 
             if (access) {
               try {
+<<<<<<< HEAD
+                const resp = await fetch(`${API_BASE}auth/verify-token/`, {
+=======
                 const res = await fetch(`${API_BASE}auth/verify-token`, {
+>>>>>>> QA
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
@@ -268,14 +261,29 @@ export const useAuthStore = create<AuthState>()(
                   },
                   body: JSON.stringify({ token: access }),
                   cache: "no-store",
-                }).then((r) => r.json());
+                });
 
-                // Si ya no es válido, intenta refrescar (mientras la pestaña está abierta)
-                if (!res?.success || !res?.data?.token_valid) {
-                  await useAuthStore.getState().refreshTokens();
+                // Si la respuesta no es OK (ej: 400/401), el token es inválido
+                if (!resp.ok) {
+                  console.warn("verify-token failed, attempting refresh...");
+                  const newToken = await useAuthStore
+                    .getState()
+                    .refreshTokens();
+                  if (!newToken) {
+                    console.log(
+                      "Refresh failed after verify-token error. Session cleared.",
+                    );
+                  }
+                } else {
+                  const res = await resp.json();
+                  // Si el token ya no es válido según el backend, intenta refrescar
+                  if (!res?.success || !res?.data?.token_valid) {
+                    await useAuthStore.getState().refreshTokens();
+                  }
                 }
-              } catch {
-                // fallo de red ⇒ no cerrar sesión
+              } catch (err) {
+                console.error("Error during initial token verification:", err);
+                // fallo de red (fetch falló) ⇒ no cerrar sesión para permitir reintentos
               }
             } else {
               const hasRefresh =
