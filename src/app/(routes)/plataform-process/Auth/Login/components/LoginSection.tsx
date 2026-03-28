@@ -6,7 +6,7 @@ import Logo from "@/gcm-plataform/components/ui/Logo";
 import ButtonGeneric from "@/gcm-plataform/components/ui/ButtonGeneric";
 import InputGeneric from "@/gcm-plataform/components/ui/InputGeneric";
 import { useAuthStore } from "@/gcm-plataform/components/store/authStore";
-import { AuthService } from "../api/services/auth.services";
+import { login } from "../api/services/auth.services";
 
 const LoginSection = () => {
   const router = useRouter();
@@ -38,7 +38,7 @@ const LoginSection = () => {
     setError(null);
 
     try {
-      const { mappedAuth, mustChangePassword } = await AuthService.login({
+      const { mappedAuth, mustChangePassword } = await login({
         identifier: formData.username,
         password: formData.password,
       });
@@ -52,6 +52,27 @@ const LoginSection = () => {
       
       if (errorMessage === "Network Error" || err.message?.includes("Network Error")) {
         errorMessage = "Error de conexión al servidor. Por favor, comunícate con un administrador, de momento no contamos con el servicio.";
+      }
+
+      // Extraemos información de intentos fallidos o bloqueo
+      const errorData = err.response?.data?.data || err.data;
+      if (errorData) {
+        const { failed_attempts, is_locked } = errorData;
+        
+        if (is_locked) {
+          const unlockTime = errorData.locked_until
+            ? new Date(errorData.locked_until).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+                timeZone: "UTC",
+              })
+            : "";
+          errorMessage = `Cuenta bloqueada por seguridad. No puedes iniciar sesión hasta las ${unlockTime || "dentro de un momento"}.`;
+        } else if (typeof failed_attempts === "number" && failed_attempts > 0) {
+          const suffix = failed_attempts === 1 ? "intento fallido" : "intentos fallidos";
+          errorMessage = `${errorMessage} (${failed_attempts} ${suffix})`;
+        }
       }
       
       setError(errorMessage);

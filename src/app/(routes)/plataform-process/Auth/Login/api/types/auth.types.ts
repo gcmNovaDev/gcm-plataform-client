@@ -36,6 +36,7 @@ export interface Tokens {
   token_type?: string;
   expires_in?: number;
   expires_at?: string;
+  token_sso?: string;
 }
 
 export interface Sesion {
@@ -47,21 +48,26 @@ export interface Sesion {
 
 export interface LoginResponseData {
   user_id: number;
-  username: string;
-  first_name: string;
-  second_name: string;
-  first_last_name: string;
-  second_last_name: string;
-  email: string;
-  plant_id: number;
-  department_id: number;
-  must_change_password: boolean;
-  session_id: number;
-  refresh_token: string;
+  username?: string;
+  first_name?: string;
+  second_name?: string;
+  first_last_name?: string;
+  second_last_name?: string;
+  email?: string;
+  plant_id?: number;
+  department_id?: number;
+  must_change_password?: boolean;
+  failed_login_attempts?: number;
+  session_id: number | null;
+  refresh_token: string | null;
   result_code: number;
   result_message: string;
   tokens?: string;
   token?: string;
+  token_sso?: string;
+  failed_attempts?: number;
+  is_locked?: boolean;
+  locked_until?: string | null;
 }
 
 export type LoginResponse = GenericBackendResponse<LoginResponseData>;
@@ -140,6 +146,7 @@ export interface Sistema {
   descripcion: string;
   icono?: string;
   url?: string;
+  url_real?: string;
   esProximamente?: boolean;
 }
 

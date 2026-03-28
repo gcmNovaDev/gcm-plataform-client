@@ -18,16 +18,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
 
   useEffect(() => {
-    console.log("[ProtectedRoute] State changed:", { hasHydrated, isAuthenticated , auth});
     if (hasHydrated && !isAuthenticated) {
-      console.warn("[ProtectedRoute] Not authenticated, redirecting to Login...");
       router.push("/plataform-process/Auth/Login");
     }
   }, [hasHydrated, isAuthenticated, router]);
 
   // Mientras se hidrata el store (lee de sessionStorage) o si no está autenticado
   if (!hasHydrated) {
-    console.log("[ProtectedRoute] Waiting for hydration...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
