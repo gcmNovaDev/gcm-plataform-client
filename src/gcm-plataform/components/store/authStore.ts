@@ -21,6 +21,7 @@ type AuthState = {
   logout: () => void;
   getValidAccessToken: () => Promise<string | null>;
   refreshTokens: () => Promise<string | null>;
+  setSsoToken: (token: string) => void;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
@@ -115,6 +116,22 @@ export const useAuthStore = create<AuthState>()(
         set({ auth: merged, isAuthenticated: Boolean(tokens?.access_token) });
       },
 
+      setSsoToken: (token) => {
+        const current = get().auth;
+        if (!current) return;
+        const updatedAuth: persistUser = {
+          ...current,
+          data: {
+            ...current.data,
+            tokens: {
+              ...current.data.tokens,
+              token_sso: token,
+            },
+          },
+        };
+        set({ auth: updatedAuth });
+      },
+
       logout: async () => {
         const refresh_token = get().auth?.data?.tokens?.refresh_token;
         try {
@@ -130,7 +147,6 @@ export const useAuthStore = create<AuthState>()(
             });
           }
         } catch (error) {
-          console.error("Error during server-side logout:", error);
         } finally {
           // Siempre limpiamos el estado local, falle o no la petición
           set({ auth: null, isAuthenticated: false });
@@ -212,7 +228,6 @@ export const useAuthStore = create<AuthState>()(
 
             return null;
           } catch (error) {
-            console.error("Error refreshing token:", error);
             return null;
           } finally {
             refreshPromise = null;
@@ -261,14 +276,10 @@ export const useAuthStore = create<AuthState>()(
 
                 // Si la respuesta no es OK (ej: 400/401), el token es inválido
                 if (!resp.ok) {
-                  console.warn("verify-token failed, attempting refresh...");
                   const newToken = await useAuthStore
                     .getState()
                     .refreshTokens();
                   if (!newToken) {
-                    console.log(
-                      "Refresh failed after verify-token error. Session cleared.",
-                    );
                   }
                 } else {
                   const res = await resp.json();
@@ -278,7 +289,6 @@ export const useAuthStore = create<AuthState>()(
                   }
                 }
               } catch (err) {
-                console.error("Error during initial token verification:", err);
                 // fallo de red (fetch falló) ⇒ no cerrar sesión para permitir reintentos
               }
             } else {

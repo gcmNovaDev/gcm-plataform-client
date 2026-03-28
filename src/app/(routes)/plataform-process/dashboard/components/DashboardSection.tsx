@@ -7,21 +7,94 @@ import InfoBar from "./InfoBar";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/gcm-plataform/components/store/authStore";
 import { Sistema } from "../../Auth/Login/api/types/auth.types";
+import { generateSSOToken } from "../../Auth/SSO/api/services/sso.services";
+import { getUserSystems } from "../system/api/services/system.services";
+import { BackendSystem } from "../system/api/types/system.types";
 
-const mockSistemas: Sistema[] = [
-  { id: 1, nombre: "Process", descripcion: "Gestión de flujos", icono: "Layout", url: "/plataform-process/process-legacy" },
-  { id: 2, nombre: "Inventario", descripcion: "Stock y activos", icono: "Layers" },
-  { id: 3, nombre: "Planillas", descripcion: "RRHH · nómina", icono: "Users" },
-  { id: 4, nombre: "Enfermería", descripcion: "Salud · registros", icono: "Activity" },
-  { id: 5, nombre: "Administración", descripcion: "Configuración", icono: "Settings" },
-  { id: 6, nombre: "Próximamente", descripcion: "Nuevo sistema", icono: "PlusCircle", esProximamente: true },
-];
+const systemIconMap: Record<string, string> = {
+  "PROCESS": "Layout",
+  "PROCESS-IAM": "Settings",
+  "INVENTARIO": "Layers",
+  "PLANILLAS": "Users",
+  "ENFERMERÍA": "Activity",
+  "ADMINISTRACIÓN": "Settings",
+};
 
 const DashboardSection: React.FC = () => {
   const router = useRouter();
-  const auth = useAuthStore((state) => state.auth);
+  const { auth, setSsoToken } = useAuthStore();
+  const [sistemas, setSistemas] = React.useState<Sistema[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
   const usuario = auth?.data?.usuario;
   const firstName = usuario?.nombreCompleto?.split(" ")[0] || "Usuario";
+
+  React.useEffect(() => {
+    const fetchSystems = async () => {
+      if (!usuario?.id) return;
+      
+      try {
+        setIsLoading(true);
+        const response = await getUserSystems(usuario.id);
+        
+        if (response.success && response.data?.systems) {
+          const mappedSystems: Sistema[] = response.data.systems.map((s: BackendSystem) => {
+            // Todos los sistemas usan ahora el componente genérico de iframe
+            const genericRoute = "/plataform-process/process-legacy";
+            return {
+              id: s.system_id,
+              nombre: s.system_name,
+              descripcion: s.description,
+              icono: systemIconMap[s.system_name.toUpperCase()] || "Layers",
+              // Guardamos la URL real para el iframe pero navegamos a la ruta limpia
+              url_real: s.url,
+              url: genericRoute,
+            };
+          });
+          setSistemas(mappedSystems);
+        }
+      } catch (error) {
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSystems();
+  }, [usuario?.id]);
+
+  const handleSystemClick = async (sistema: Sistema) => {
+    if (!sistema.url_real) {
+      return;
+    }
+
+    try {
+      // 1. Limpiar el token anterior para asegurar frescura
+      setSsoToken("");
+      
+      // 2. Guardar el sistema seleccionado en localStorage para mantener la URL del navegador limpia
+      if (typeof window !== "undefined") {
+        localStorage.setItem("gcm_selected_system_url", sistema.url_real);
+        localStorage.setItem("gcm_selected_system_name", sistema.nombre);
+      }
+
+      // 3. Generar token SSO nuevo localmente a través de Server Action
+      if (!usuario) throw new Error("Usuario no autenticado");
+
+      const tokenSso = await generateSSOToken({
+        user_id: usuario.id,
+        username: usuario.nombreCompleto?.split(" ")[0] || "User",
+        email: usuario.email,
+        refresh_token: auth?.data?.tokens?.refresh_token!,
+        system_id: sistema.id,
+      });
+      
+      // 4. Guardar y navegar a la ruta limpia
+      setSsoToken(tokenSso);
+      router.push(sistema.url || "/plataform-process/process-legacy");
+    } catch (error) {
+      alert("No se pudo iniciar sesión en el sistema solicitado. Por favor intente de nuevo.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -40,23 +113,27 @@ const DashboardSection: React.FC = () => {
 
         {/* Systems Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {mockSistemas.map((sistema) => (
-            <SystemCard
-              key={sistema.id}
-              nombre={sistema.nombre}
-              descripcion={sistema.descripcion}
-              icono={sistema.icono}
-              esProximamente={sistema.esProximamente}
-              onClick={() => {
-                if (sistema.url) {
-                  // Ya no adjuntamos el token en la URL para ocultarlo de los logs del servidor
-                  router.push(sistema.url);
-                } else if (!sistema.esProximamente) {
-                  console.log(`Redirecting to ${sistema.nombre}...`);
-                }
-              }}
-            />
-          ))}
+          {isLoading ? (
+            // Skeleton loader or loading state
+            <div className="col-span-full text-center py-20">
+              <p className="text-app-gray-1-500 animate-pulse">Cargando sistemas...</p>
+            </div>
+          ) : sistemas.length > 0 ? (
+            sistemas.map((sistema) => (
+              <SystemCard
+                key={sistema.id}
+                nombre={sistema.nombre}
+                descripcion={sistema.descripcion}
+                icono={sistema.icono}
+                esProximamente={sistema.esProximamente}
+                onClick={() => handleSystemClick(sistema)}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-20">
+              <p className="text-app-gray-1-500">No tienes sistemas asignados.</p>
+            </div>
+          )}
         </div>
 
         {/* Footer Info Bar */}
