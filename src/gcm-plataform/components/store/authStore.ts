@@ -7,6 +7,8 @@ import type {
   Tokens,
   BackendLoginPayload,
 } from "../../../app/(routes)/plataform-process/Auth/Login/api/types/auth.types";
+import { getUserProfile } from "@/app/(routes)/plataform-process/Users/api/services/users.services";
+import { UserProfileData } from "@/app/(routes)/plataform-process/Users/api/types/users.types";
 
 type AuthState = {
   auth: persistUser | null;
@@ -23,13 +25,17 @@ type AuthState = {
   refreshTokens: () => Promise<string | null>;
   setSsoToken: (token: string) => void;
   completePasswordChange: () => void;
+
+  userProfile: UserProfileData | null;
+  fetchUserProfile: (userId: string | number) => Promise<void>;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 let refreshPromise: Promise<string | null> | null = null;
+let profilePromise: Promise<void> | null = null;
 
 // ===== utils =====
-function parseJwtExp(accessToken?: string): number | null {
+export function parseJwtExp(accessToken?: string): number | null {
   if (!accessToken) return null;
   try {
     const b64 = accessToken.split(".")[1];
@@ -95,6 +101,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       auth: null,
       isAuthenticated: false,
+      userProfile: null,
 
       hasHydrated: false,
       whenHydrated: () => hydrationPromise,
@@ -249,6 +256,26 @@ export const useAuthStore = create<AuthState>()(
           },
         };
         set({ auth: updatedAuth });
+      },
+
+      fetchUserProfile: async (userId: string | number) => {
+        if (get().userProfile) return;
+        if (profilePromise) return profilePromise;
+
+        profilePromise = (async () => {
+          try {
+            const response = await getUserProfile(userId);
+            if (response.success && response.data) {
+              set({ userProfile: response.data });
+            }
+          } catch (error) {
+            console.error(error);
+          } finally {
+            profilePromise = null;
+          }
+        })();
+
+        return profilePromise;
       },
     }),
     {
