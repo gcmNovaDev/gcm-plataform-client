@@ -59,6 +59,7 @@ export const login = async (
           id: (data.session_id ?? 0).toString(),
           sessionIdString: (data.session_id ?? 0).toString(),
         },
+        must_change_password: data.must_change_password ?? false,
       },
     };
 

@@ -44,7 +44,12 @@ const LoginSection = () => {
       });
 
       setAuth(mappedAuth);
-      router.replace("/plataform-process/dashboard");
+      
+      if (mustChangePassword) {
+        router.replace("/plataform-process/password");
+      } else {
+        router.replace("/plataform-process/dashboard");
+      }
       
     } catch (err: any) {
       // Priorizamos el mensaje del backend si viene en el error de Axios

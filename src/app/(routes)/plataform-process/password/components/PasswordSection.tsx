@@ -1,10 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/gcm-plataform/components/ui/Navbar";
 import InputGeneric from "@/gcm-plataform/components/ui/InputGeneric";
 import ButtonGeneric from "@/gcm-plataform/components/ui/ButtonGeneric";
-import { Check } from "lucide-react";
+import { useAuthStore } from "@/gcm-plataform/components/store/authStore";
+import { usePasswordStrength } from "@/gcm-plataform/components/hooks/usePasswordStrength";
+import { updateUserPassword } from "../api/services/password.services";
+import { Check, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const PasswordSection: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -13,41 +17,54 @@ const PasswordSection: React.FC = () => {
     confirmPassword: "",
   });
 
-  const [strength, setStrength] = useState({
-    score: 0,
-    label: "Muy débil",
-    color: "bg-red-500",
-  });
+  const usuario = useAuthStore((state) => state.auth?.data?.usuario);
+  const completePasswordChange = useAuthStore((state) => state.completePasswordChange);
+  const router = useRouter();
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const [rules, setRules] = useState({
-    minLength: false,
-    hasUpper: false,
-    hasNumber: false,
-  });
-
-  useEffect(() => {
-    const pwd = formData.newPassword;
-    const newRules = {
-      minLength: pwd.length >= 8,
-      hasUpper: /[A-Z]/.test(pwd),
-      hasNumber: /[0-9]/.test(pwd),
-    };
-    setRules(newRules);
-
-    const score = Object.values(newRules).filter(Boolean).length;
-    let label = "Muy débil";
-    let color = "bg-red-500";
-    
-    if (score === 1) { label = "Débil"; color = "bg-orange-500"; }
-    else if (score === 2) { label = "Buena"; color = "bg-emerald-500"; }
-    else if (score === 3) { label = "Muy segura"; color = "bg-blue-500"; }
-
-    setStrength({ score, label, color });
-  }, [formData.newPassword]);
+  const { strength, rules } = usePasswordStrength(formData.newPassword);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Eliminamos cualquier espacio en blanco (inicio, medio o fin) usando regex
+    const cleanValue = value.replace(/\s/g, "");
+    setFormData((prev) => ({ ...prev, [name]: cleanValue }));
+    if (error) setError(null);
+    if (success) setSuccess(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuario?.id) return;
+
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await updateUserPassword({
+        user_id: parseInt(usuario.id),
+        current_password: formData.currentPassword,
+        new_password: formData.newPassword,
+        changed_by: parseInt(usuario.id),
+      });
+
+      completePasswordChange();
+      setSuccess("Contraseña actualizada correctamente. Redirigiendo...");
+      setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      
+      // Redirigimos al dashboard después de un momento
+      setTimeout(() => {
+        router.replace("/plataform-process/dashboard");
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || "Error al actualizar la contraseña");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -72,7 +89,20 @@ const PasswordSection: React.FC = () => {
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="p-4 rounded-lg bg-red-50 border border-red-100 flex items-start gap-3 text-red-700 animate-in fade-in slide-in-from-top-1 duration-300">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-100 flex items-start gap-3 text-emerald-700 animate-in fade-in slide-in-from-top-1 duration-300">
+                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium">{success}</p>
+              </div>
+            )}
             <InputGeneric
               label="Contraseña actual"
               name="currentPassword"
@@ -138,7 +168,8 @@ const PasswordSection: React.FC = () => {
               type="submit" 
               className="w-full !mt-10"
               variant="primary"
-              disabled={strength.score < 3 || formData.newPassword !== formData.confirmPassword || !formData.currentPassword}
+              isLoading={isLoading}
+              disabled={strength.score < 3 || formData.newPassword !== formData.confirmPassword || !formData.currentPassword || isLoading}
             >
               Actualizar contraseña
             </ButtonGeneric>

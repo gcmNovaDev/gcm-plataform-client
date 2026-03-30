@@ -128,6 +128,7 @@ export interface persistUser {
     usuario: Usuario;
     tokens: Tokens;
     sesion: Sesion;
+    must_change_password?: boolean;
   };
 }
 
