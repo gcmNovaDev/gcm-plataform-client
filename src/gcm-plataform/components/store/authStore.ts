@@ -22,6 +22,7 @@ type AuthState = {
   getValidAccessToken: () => Promise<string | null>;
   refreshTokens: () => Promise<string | null>;
   setSsoToken: (token: string) => void;
+  completePasswordChange: () => void;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
@@ -235,6 +236,19 @@ export const useAuthStore = create<AuthState>()(
         })();
 
         return refreshPromise;
+      },
+
+      completePasswordChange: () => {
+        const current = get().auth;
+        if (!current) return;
+        const updatedAuth = {
+          ...current,
+          data: {
+            ...current.data,
+            must_change_password: false,
+          },
+        };
+        set({ auth: updatedAuth });
       },
     }),
     {

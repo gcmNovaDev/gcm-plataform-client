@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/gcm-plataform/components/store/authStore";
 import Logo from "@/gcm-plataform/components/ui/Logo";
 
@@ -17,11 +17,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
 
+  const pathname = usePathname();
+  const mustChangePassword = auth?.data?.must_change_password;
+
   useEffect(() => {
-    if (hasHydrated && !isAuthenticated) {
-      router.push("/plataform-process/Auth/Login");
+    if (hasHydrated) {
+      if (!isAuthenticated) {
+        router.push("/plataform-process/Auth/Login");
+      } else if (mustChangePassword && pathname !== "/plataform-process/password") {
+        router.push("/plataform-process/password");
+      }
     }
-  }, [hasHydrated, isAuthenticated, router]);
+  }, [hasHydrated, isAuthenticated, mustChangePassword, pathname, router]);
 
   // Mientras se hidrata el store (lee de sessionStorage) o si no está autenticado
   if (!hasHydrated) {
