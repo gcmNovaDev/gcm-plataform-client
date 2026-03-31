@@ -14,7 +14,7 @@ interface UserMenuProps {
 const UserMenu: React.FC<UserMenuProps> = ({ showBack = false, onBack }) => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const { usuario, sesion, handleLogout } = useNavbarAuth();
+  const { usuario, sesion, handleLogout, userProfile } = useNavbarAuth();
 
   const handleBack = () => {
     if (onBack) {
@@ -36,7 +36,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ showBack = false, onBack }) => {
             {usuario?.nombreCompleto || "Usuario"}
           </span>
           <span className="text-[10px] opacity-70 uppercase font-medium text-white/80">
-            {usuario?.tipoUsuario?.nombre || "Planta Central"}
+            {userProfile?.department_name || usuario?.tipoUsuario?.nombre || "Planta Central"}
           </span>
         </div>
 

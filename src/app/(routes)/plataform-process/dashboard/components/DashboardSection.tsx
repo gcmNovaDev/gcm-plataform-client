@@ -38,7 +38,9 @@ const DashboardSection: React.FC = () => {
         const response = await getUserSystems(usuario.id);
         
         if (response.success && response.data?.systems) {
-          const mappedSystems: Sistema[] = response.data.systems.map((s: BackendSystem) => {
+          const mappedSystems: Sistema[] = response.data.systems
+            .filter((s: BackendSystem) => s.system_name.toLowerCase() !== "process-plataform")
+            .map((s: BackendSystem) => {
             // Todos los sistemas usan ahora el componente genérico de iframe
             const genericRoute = "/plataform-process/process-legacy";
             return {
