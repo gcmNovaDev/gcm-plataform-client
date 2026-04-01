@@ -94,7 +94,7 @@ const DashboardSection: React.FC = () => {
       setSsoToken(tokenSso);
       router.push(sistema.url || "/plataform-process/process-legacy");
     } catch (error) {
-      alert("No se pudo iniciar sesión en el sistema solicitado. Por favor intente de nuevo.");
+      console.error("No se pudo iniciar sesión en el sistema solicitado. Por favor intente de nuevo: ", error);
     }
   };
 
