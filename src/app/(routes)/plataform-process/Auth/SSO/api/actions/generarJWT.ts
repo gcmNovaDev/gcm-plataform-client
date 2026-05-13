@@ -15,9 +15,9 @@ export async function generarJWT(
   return new Promise((resolve, reject) => {
     const payload = { user_id, username, email, refresh_token, system_id };
 
-    const secret = process.env.API_KEY_IAM || "";
+    const secret = process.env.API_KEY_PLATAFORM || "";
     if (!secret) {
-      return reject("API_KEY_IAM no está configurada");
+      return reject("API_KEY_PLATAFORM no está configurada");
     }
 
     jwt.sign(
