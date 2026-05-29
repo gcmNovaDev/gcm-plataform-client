@@ -8,6 +8,11 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/gcm-plataform/components/store/authStore";
 import { Sistema } from "../../Auth/Login/api/types/auth.types";
 import { generateSSOToken } from "../../Auth/SSO/api/services/sso.services";
+import {
+  getUserSidebarMenu,
+  getUserRoles,
+  getUserPermissions,
+} from "../../Auth/SSO/api/services/userAccess.services";
 import { getUserSystems } from "../system/api/services/system.services";
 import { BackendSystem } from "../system/api/types/system.types";
 
@@ -82,12 +87,22 @@ const DashboardSection: React.FC = () => {
       // 3. Generar token SSO nuevo localmente a través de Server Action
       if (!usuario) throw new Error("Usuario no autenticado");
 
+      // Consultar sidebar, roles y permisos en paralelo para la plataforma
+      const [sidebarRes, rolesRes, permissionsRes] = await Promise.all([
+        getUserSidebarMenu(usuario.id, sistema.id).catch(() => ({ success: false, data: [] })),
+        getUserRoles(usuario.id, sistema.id).catch(() => ({ success: false, data: [] })),
+        getUserPermissions(usuario.id, sistema.id).catch(() => ({ success: false, data: [] })),
+      ]);
+
       const tokenSso = await generateSSOToken({
         user_id: usuario.id,
         username: usuario.nombreCompleto?.split(" ")[0] || "User",
         email: usuario.email,
         refresh_token: auth?.data?.tokens?.refresh_token!,
         system_id: sistema.id,
+        sidebar: sidebarRes.success && sidebarRes.data ? sidebarRes.data : [],
+        roles: rolesRes.success && rolesRes.data ? rolesRes.data : [],
+        permissions: permissionsRes.success && permissionsRes.data ? permissionsRes.data : [],
       });
       
       // 4. Guardar y navegar a la ruta limpia
