@@ -11,9 +11,21 @@ export async function generarJWT(
   email: string = "",
   refresh_token: string = "",
   system_id: string | number = "",
+  sidebar: any[] = [],
+  roles: any[] = [],
+  permissions: any[] = [],
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const payload = { user_id, username, email, refresh_token, system_id };
+    const payload = {
+      user_id,
+      username,
+      email,
+      refresh_token,
+      system_id,
+      sidebar,
+      roles,
+      permissions,
+    };
 
     const secret = process.env.API_KEY_PLATAFORM || "";
     if (!secret) {
@@ -46,6 +58,9 @@ export async function generateLocalSSOTokenAction(payload: {
   email: string;
   refresh_token: string;
   system_id: string | number;
+  sidebar?: any[];
+  roles?: any[];
+  permissions?: any[];
 }): Promise<string> {
   return await generarJWT(
     payload.user_id,
@@ -53,5 +68,8 @@ export async function generateLocalSSOTokenAction(payload: {
     payload.email,
     payload.refresh_token,
     payload.system_id,
+    payload.sidebar || [],
+    payload.roles || [],
+    payload.permissions || [],
   );
 }
