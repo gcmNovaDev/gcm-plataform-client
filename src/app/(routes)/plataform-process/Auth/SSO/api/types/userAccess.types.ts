@@ -39,16 +39,3 @@ export interface UserSidebarResponse {
   message: string;
   data: UserSidebarItem[];
 }
-
-/**
- * Recupera el menú lateral dinámico del usuario para un sistema específico
- */
-export async function getUserSidebarMenu(
-  user_id: number | string,
-  system_id: number | string,
-): Promise<UserSidebarResponse> {
-  return apiService.get<UserSidebarResponse>(
-    `sidebar/user/${user_id}/system/${system_id}`,
-    AuthType.SecurityAuthentication,
-  );
-}
