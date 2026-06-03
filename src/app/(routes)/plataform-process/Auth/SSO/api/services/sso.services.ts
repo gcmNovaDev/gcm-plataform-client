@@ -11,6 +11,9 @@ export const generateSSOToken = async (payload: {
   email: string;
   refresh_token: string;
   system_id: string | number;
+  sidebar?: any[];
+  roles?: any[];
+  permissions?: any[];
 }): Promise<string> => {
   try {
     const tokenSso = await generateLocalSSOTokenAction(payload);
