@@ -42,6 +42,16 @@ function ProcessLegacyContent() {
         );
       }
 
+      // Cierre por inactividad: el iframe detectó 15 min sin actividad del usuario
+      // Platform hace logout completo y redirige la VENTANA PRINCIPAL (no solo el iframe)
+      const timeoutEventType =
+        process.env.NEXT_PUBLIC_SSO_EVENT_TIMEOUT ?? "GCM_SESSION_TIMEOUT";
+      if (event.data?.type === timeoutEventType && event.data?.reason === "inactivity") {
+        await logout();
+        window.location.href = "/plataform-process/Auth/Login";
+        return;
+      }
+
       // Error: Capturar rechazo desde el iframe y redirigir al login
       if (event.data?.type === process.env.NEXT_PUBLIC_SSO_EVENT_ERROR) { 
         // 1. Cerrar la sesión de la plataforma
